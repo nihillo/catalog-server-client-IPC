@@ -2,10 +2,7 @@
 
 int main(int argc, char *argv[]) {
 
-    printf("Inicializando cliente...\n");
-
     pid_t pid = getpid();
-
 
     Mensaje mensaje;
     mensaje.tipo = (long)pid;
@@ -13,8 +10,13 @@ int main(int argc, char *argv[]) {
 
     int tam = sizeof(mensaje) - sizeof(mensaje.tipo);
 
+    obtener_colas();
 
-    int r = msgsnd(C_PETICIONES, &mensaje, tam, 0);
+    int p = msgsnd(C_PETICIONES, &mensaje, tam, 0);
+
+    int r = msgrcv(C_RESPUESTAS, &mensaje, tam, pid, 0);
+
+    printf("%s\n", mensaje.cuerpo);
 
     return 0;
 } 
