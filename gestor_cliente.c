@@ -1,8 +1,8 @@
 #include "protocolo.h"
 
 int main(int argc, char *argv[]) {
-
     pid_t pid = getpid();
+    int cola_peticiones, cola_respuestas;
 
     Mensaje mensaje;
     mensaje.tipo = (long)pid;
@@ -10,11 +10,22 @@ int main(int argc, char *argv[]) {
 
     int tam = sizeof(mensaje) - sizeof(mensaje.tipo);
 
-    obtener_colas();
+    key_t clave_peticiones = CLAVE_PETICIONES;
+    key_t clave_respuestas = CLAVE_RESPUESTAS;
 
-    int p = msgsnd(C_PETICIONES, &mensaje, tam, 0);
+    cola_peticiones = msgget(clave_peticiones, 0);
+    cola_respuestas = msgget(clave_respuestas, 0);  
 
-    int r = msgrcv(C_RESPUESTAS, &mensaje, tam, pid, 0);
+    if (cola_peticiones == -1 || cola_respuestas == -1) {
+        printf("El servidor está apagado\n");
+        return 0;
+    }
+
+    
+
+    int p = msgsnd(cola_peticiones, &mensaje, tam, 0);
+
+    int r = msgrcv(cola_respuestas, &mensaje, tam, pid, 0);
 
     printf("%s\n", mensaje.cuerpo);
 
