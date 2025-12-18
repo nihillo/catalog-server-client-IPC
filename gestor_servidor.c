@@ -33,10 +33,10 @@ int main(int argc, char *argv[]) {
             servidor_activo = 0;
         }
 
-        if (strcmp(mensaje.cuerpo, OP_APAGAR) == 0) {
-            printf("Recibida petición de APAGADO\n");
-            servidor_activo = 0;
-        }
+        // if (mensaje.cuerpo == OP_APAGAR) {
+        //     printf("Recibida petición de APAGADO\n");
+        //     servidor_activo = 0;
+        // }
 
         if (servidor_activo) {
             char msg_peticion[LNG_MSG];
