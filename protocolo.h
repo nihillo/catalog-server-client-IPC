@@ -10,7 +10,7 @@
 #define LNG_NOMBRE 44 // long efectiva 43
 #define LNG_CANTIDAD 4 // long efectiva 3
 #define N_SEPARADORES 3   
-#define LNG_MSG LNG_CODIGO_PRODUCTO + LNG_NOMBRE + LNG_CANTIDAD + N_SEPARADORES
+#define LNG_PET LNG_CODIGO_PRODUCTO + LNG_NOMBRE + LNG_CANTIDAD + N_SEPARADORES
 
 #define ARG_LISTAR "listar"
 #define ARG_BUSCAR "buscar"
@@ -28,11 +28,11 @@
 
 typedef struct {
     char codigo[LNG_CODIGO_PRODUCTO];
-    char nombre[LNG_MSG];
+    char nombre[LNG_NOMBRE];
     int cantidad;
 } Producto;
 
 typedef struct {
     long tipo;
-    char cuerpo[LNG_MSG];
+    char cuerpo[LNG_PET];
 } Mensaje;

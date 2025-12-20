@@ -4,11 +4,13 @@ int main(int argc, char *argv[]) {
     pid_t pid = getpid();
     int cola_peticiones, cola_respuestas;
 
-    Mensaje mensaje;
-    mensaje.tipo = (long)pid;
+    Mensaje peticion;
+    Mensaje respuesta;
+
+    peticion.tipo = (long)pid;
 
     if (argc < 2) {
-        printf("No se ha introducido la operación a realizar");
+        printf("No se ha introducido la operación a realizar\n");
         exit(1);
     }
 
@@ -73,8 +75,8 @@ int main(int argc, char *argv[]) {
 
     // Concatenamos el cuerpo del mensaje
     snprintf(
-        mensaje.cuerpo, 
-        LNG_MSG, 
+        peticion.cuerpo, 
+        LNG_PET, 
         "%c|%s|%s|%s", 
         op, 
         codigo, 
@@ -84,7 +86,7 @@ int main(int argc, char *argv[]) {
 
 
 
-    int tam = sizeof(mensaje) - sizeof(mensaje.tipo);
+    int tam = sizeof(peticion) - sizeof(peticion.tipo);
 
     key_t clave_peticiones = CLAVE_PETICIONES;
     key_t clave_respuestas = CLAVE_RESPUESTAS;
@@ -99,21 +101,33 @@ int main(int argc, char *argv[]) {
 
     
 
-    int p = msgsnd(cola_peticiones, &mensaje, tam, 0);
+    int p = msgsnd(cola_peticiones, &peticion, tam, 0);
 
     if (p == -1) {
         perror("msgsnd");
         exit(1);
     }
 
-    int r = msgrcv(cola_respuestas, &mensaje, tam, pid, 0);
+    int cliente_activo = 1;
 
-    if (r == -1) {
-        perror("msgrcv");
-        exit(1);
+    while(cliente_activo) {
+        int r = msgrcv(cola_respuestas, &respuesta, tam, pid, 0);
+
+        if (r == -1) {
+            perror("Error en la recepción de la respuesta");
+            exit(1);
+        }
+
+        if (strcmp(respuesta.cuerpo, "--END") == 0) {
+            printf("Fin de mensaje recibido\n");
+            cliente_activo = 0;
+        }
+
+        if (cliente_activo) {
+            printf("%s\n", respuesta.cuerpo);
+        }
     }
-
-    printf("%s\n", mensaje.cuerpo);
+    
 
     return 0;
 } 

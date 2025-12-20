@@ -19,31 +19,80 @@ int main(int argc, char *argv[]) {
     }
 
     printf("Colas de mensajes inicializadas. Peticiones ID: %d, Respuestas ID: %d\n", cola_peticiones, cola_respuestas);
-    Mensaje mensaje;
+    Mensaje peticion;
+    Mensaje respuesta;
+    int p, r;
 
     int servidor_activo = 1;
-    int tam = sizeof(mensaje) - sizeof(mensaje.tipo);
+    int tam = sizeof(peticion) - sizeof(peticion.tipo);
 
     while (servidor_activo) {
+        // Limpiamos variables de mensajes
+        memset(&peticion, 0, tam);
+        memset(&respuesta, 0, tam);
+        p = r = 0;
 
-        int p = msgrcv(cola_peticiones, &mensaje, tam, 0, 0);
-
+        p = msgrcv(cola_peticiones, &peticion, tam, 0, 0);
         if (p == -1) {
-            perror("msgrcv");
+            perror("Error en la comunicación");
+            servidor_activo = 0;
+        }
+        
+        respuesta.tipo = peticion.tipo;
+        sprintf(respuesta.cuerpo, "Debug: Mensaje recibido: %s", peticion.cuerpo);
+        r = msgsnd(cola_respuestas, &respuesta, tam, 0);
+        
+        if (r == -1) {
+            perror("Error en la comunicación");
             servidor_activo = 0;
         }
 
-        // if (mensaje.cuerpo == OP_APAGAR) {
-        //     printf("Recibida petición de APAGADO\n");
-        //     servidor_activo = 0;
-        // }
-
         if (servidor_activo) {
-            char msg_peticion[LNG_MSG];
-            strcpy(msg_peticion, mensaje.cuerpo);
-            sprintf(mensaje.cuerpo, "Mensaje recibido: %s", msg_peticion);
+            // Descomponemos la petición en variables
+            char operacion;
+            char codigo[LNG_CODIGO_PRODUCTO];
+            char nombre[LNG_NOMBRE];
+            char cantidad[LNG_CANTIDAD];
 
-            int r = msgsnd(cola_respuestas, &mensaje, tam, 0);
+            sscanf(peticion.cuerpo, "%c|%[^|]|%[^|]|%s", &operacion, codigo, nombre, cantidad);
+
+            // Se determina la operación a realizar
+            switch (operacion)
+            {
+                case OP_LISTAR:
+                    strcpy(respuesta.cuerpo, "LISTAR");
+                    r = msgsnd(cola_respuestas, &respuesta, tam, 0);
+        
+                    if (r == -1) {
+                        perror("Error en la comunicación");
+                        servidor_activo = 0;
+                    }
+                    break;
+
+                case OP_INSERTAR:
+                    /* code */
+                    break;
+
+                case OP_BUSCAR:
+                    /* code */
+                    break;
+
+                case OP_APAGAR:
+                    printf("Recibida petición de APAGADO\n");
+                    servidor_activo = 0;
+                    break;
+
+                default:
+                    break;
+            }
+
+            strcpy(respuesta.cuerpo, "--END");
+            r = msgsnd(cola_respuestas, &respuesta, tam, 0);
+        
+            if (r == -1) {
+                perror("Error en la comunicación");
+                servidor_activo = 0;
+            }
         }
     }    
 
