@@ -12,15 +12,11 @@
 #define N_SEPARADORES 3   
 #define LNG_PET LNG_CODIGO_PRODUCTO + LNG_NOMBRE + LNG_CANTIDAD + N_SEPARADORES
 
-#define ARG_LISTAR "listar"
-#define ARG_BUSCAR "buscar"
-#define ARG_INSERTAR "insertar"
-#define ARG_APAGAR "apagar"
-
-#define OP_LISTAR 'L'
-#define OP_BUSCAR 'B'
-#define OP_INSERTAR 'I'
-#define OP_APAGAR 'A'
+#define OP_LISTAR 1
+#define OP_BUSCAR 2
+#define OP_INSERTAR 3
+#define OP_APAGAR 4
+#define OP_SALIR 5
 
 #define ARCHIVO_CLAVE "protocolo.h"
 #define CLAVE_PETICIONES ftok(ARCHIVO_CLAVE, 'P');
