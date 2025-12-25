@@ -1,3 +1,4 @@
+#include <errno.h>
 #include "protocolo.h"
 
 int obtener_opcion_menu() {
@@ -60,31 +61,32 @@ int main(int argc, char *argv[]) {
     pid_t pid = getpid();
     int cola_peticiones, cola_respuestas;
 
+    key_t clave_peticiones = CLAVE_PETICIONES;
+    key_t clave_respuestas = CLAVE_RESPUESTAS; 
+
     Mensaje peticion;
     Mensaje respuesta;
 
     peticion.tipo = (long)pid;
-
-    // Obtener colas de mensajes
     int tam = sizeof(peticion) - sizeof(peticion.tipo);
 
-    key_t clave_peticiones = CLAVE_PETICIONES;
-    key_t clave_respuestas = CLAVE_RESPUESTAS;
-
-    cola_peticiones = msgget(clave_peticiones, 0);
-    cola_respuestas = msgget(clave_respuestas, 0);  
-
-    if (cola_peticiones == -1 || cola_respuestas == -1) {
-        printf("El servidor está apagado\n");
-        exit(EXIT_FAILURE);
-    }
-
+    
     while (1) {
+       
+        // Obtener colas. En caso de no existir, se cierra con error de servidor apagado 
+        cola_peticiones = msgget(clave_peticiones, 0);
+        cola_respuestas = msgget(clave_respuestas, 0);
+
+        if (cola_peticiones == -1 || cola_respuestas == -1) {
+            printf("El servidor está apagado. Se cerrará el cliente...\n");
+            exit(EXIT_SUCCESS);
+        }
+
         int operacion = obtener_opcion_menu();
         char codigo[LNG_CODIGO_PRODUCTO] = {0};
         char nombre[LNG_NOMBRE] = {0};
         char cantidad[LNG_CANTIDAD] = {0};
-        
+
         switch (operacion) {
             case OP_LISTAR:
                 strncpy(codigo, "", LNG_CODIGO_PRODUCTO - 1);
@@ -138,22 +140,31 @@ int main(int argc, char *argv[]) {
             exit(EXIT_FAILURE);
         }
 
-        int cliente_activo = 1;
-
-        while(cliente_activo) {
+        
+        // Recibir secuencia de mensajes
+        int recibir_secuencia = 1;
+        while(recibir_secuencia) {
             int r = msgrcv(cola_respuestas, &respuesta, tam, pid, 0);
 
             if (r == -1) {
-                perror("Error en la recepción de la respuesta");
-                exit(EXIT_FAILURE);
+                if (errno == EIDRM) {
+                    // Si se elimina cola_respuestas mientras esperamos un mensaje, significa
+                    // que se ha apagado el servidor
+                    printf("Servidor apagado.\n");
+                    // Desactivamos la recepción de secuencia para salir del bucle 
+                    recibir_secuencia = 0;
+                } else {
+                    perror("Error en la recepción de la respuesta");
+                    exit(EXIT_FAILURE);
+                }
             }
 
-            if (strcmp(respuesta.cuerpo, "--END") == 0) {
-                printf("Fin de mensaje recibido\n");
-                cliente_activo = 0;
+            if (recibir_secuencia && strcmp(respuesta.cuerpo, "--END") == 0) {
+                printf("Debug: Fin de mensaje recibido\n");
+                recibir_secuencia = 0;
             }
 
-            if (cliente_activo) {
+            if (recibir_secuencia) {
                 printf("%s\n", respuesta.cuerpo);
             }
         }

@@ -49,16 +49,16 @@ int main(int argc, char *argv[]) {
 
         if (servidor_activo) {
             // Descomponemos la petición en variables
-            char operacion;
+            int operacion;
             char codigo[LNG_CODIGO_PRODUCTO];
             char nombre[LNG_NOMBRE];
             char cantidad[LNG_CANTIDAD];
 
-            sscanf(peticion.cuerpo, "%c|%[^|]|%[^|]|%s", &operacion, codigo, nombre, cantidad);
+            sscanf(peticion.cuerpo, "%d|%[^|]|%[^|]|%s", &operacion, codigo, nombre, cantidad);
 
             // Se determina la operación a realizar
-            switch (operacion)
-            {
+            switch (operacion) {
+
                 case OP_LISTAR:
                     strcpy(respuesta.cuerpo, "LISTAR");
                     r = msgsnd(cola_respuestas, &respuesta, tam, 0);
@@ -86,6 +86,8 @@ int main(int argc, char *argv[]) {
                     break;
             }
 
+
+            // Enviamos fin de secuencia
             strcpy(respuesta.cuerpo, "--END");
             r = msgsnd(cola_respuestas, &respuesta, tam, 0);
         
@@ -93,6 +95,7 @@ int main(int argc, char *argv[]) {
                 perror("Error en la comunicación");
                 servidor_activo = 0;
             }
+
         }
     }    
 
