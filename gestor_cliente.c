@@ -64,7 +64,7 @@ void obtener_nombre(char *nombre) {
         printf("Introduzca nombre de producto: ");
         fgets(entrada_nombre, sizeof(entrada_nombre), stdin);
 
-        if (sscanf(entrada_nombre, "%[^\n]", nombre) == 1) {
+        if (sscanf(entrada_nombre, "%[^\n]", nombre_temp) == 1) {
             if (strlen(nombre) < LNG_NOMBRE) {
                 strcpy(nombre, nombre_temp);
                 break;
@@ -96,7 +96,7 @@ void obtener_cantidad(char *cantidad) {
 
         if (sscanf(entrada_cantidad, "%d", &cantidad_temp) == 1) {
             if (cantidad_temp >= 0 && cantidad_temp < 1000) {
-                snprintf(cantidad, (LNG_CANTIDAD - 1), "%d", cantidad_temp);
+                snprintf(cantidad, LNG_CANTIDAD, "%d", cantidad_temp);
                 break;
             } else {
                 printf("Error: cantidad no válida (0-999)\n");
