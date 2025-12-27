@@ -15,11 +15,11 @@ int obtener_opcion_menu() {
     printf("\n");
     printf("Pulse una opción: ");
 
-    char entrada[100];
+    char entrada_menu[100];
     int opcion;
         
-    fgets(entrada, sizeof(entrada), stdin);
-    sscanf(entrada, "%d", &opcion);
+    fgets(entrada_menu, sizeof(entrada_menu), stdin);
+    sscanf(entrada_menu, "%d", &opcion);
     
     printf("\n");
 
@@ -27,27 +27,93 @@ int obtener_opcion_menu() {
 }
 
 void obtener_codigo(char *codigo) {
-    char entrada[100];
+    char entrada_codigo[100];
+    char codigo_temp[100]; // buffer auxiliar para validar sin desbordar
 
-    printf("Introduzca código de producto: ");
-    fgets(entrada, sizeof(entrada), stdin);
-    sscanf(entrada, "%s", codigo);
+    while (1) {
+        printf("Introduzca código de producto: ");
+        fgets(entrada_codigo, sizeof(entrada_codigo), stdin);
+
+        if (sscanf(entrada_codigo, "%s", codigo_temp) == 1) {
+            if (strlen(codigo_temp) < LNG_CODIGO_PRODUCTO) {
+                strcpy(codigo, codigo_temp);
+                break;
+            } else {
+                printf("Error: El código es demasiado largo (máximo %d caracteres).\n", LNG_CODIGO_PRODUCTO - 1);
+            }
+        } else {
+            printf("\nFormato no válido\n");
+        }
+
+        // Limpiamos el buffer de entrada (stdin) consumiendo caracteres en caso de que 
+        // hayan quedado caracteres sin leer, de tal modo de que en caso de que se haya 
+        // introducido una cadena más larga que lo asignado a entrada_nombre, quede 
+        // limpio para la siguiente iteración
+        if (strchr(entrada_codigo, '\n') == NULL) {
+            char c;
+            while ((c = getchar()) != '\n' && c != EOF);
+        }
+    }
 } 
 
 void obtener_nombre(char *nombre) {
-    char entrada[100];
+    char entrada_nombre[100];
+    char nombre_temp[100]; // buffer auxiliar para validar sin desbordar
 
-    printf("Introduzca nombre de producto: ");
-    fgets(entrada, sizeof(entrada), stdin);
-    sscanf(entrada, "%[^\n]", nombre);
+    while(1) {
+        printf("Introduzca nombre de producto: ");
+        fgets(entrada_nombre, sizeof(entrada_nombre), stdin);
+
+        if (sscanf(entrada_nombre, "%[^\n]", nombre) == 1) {
+            if (strlen(nombre) < LNG_NOMBRE) {
+                strcpy(nombre, nombre_temp);
+                break;
+            } else {
+                printf("Error: El nombre es demasiado largo (máximo %d caracteres).\n", LNG_NOMBRE - 1);
+            }
+        } else {
+            printf("\nFormato no válido\n");
+        }
+
+        // Limpiamos el buffer de entrada (stdin) consumiendo caracteres en caso de que 
+        // hayan quedado caracteres sin leer, de tal modo de que en caso de que se haya 
+        // introducido una cadena más larga que lo asignado a entrada_nombre, quede 
+        // limpio para la siguiente iteración
+        if (strchr(entrada_nombre, '\n') == NULL) {
+            char c;
+            while ((c = getchar()) != '\n' && c != EOF);
+        }
+    }
 } 
 
 void obtener_cantidad(char *cantidad) {
-    char entrada[100];
+    char entrada_cantidad[100];
+    int cantidad_temp;
 
-    printf("Introduzca cantidad: ");
-    fgets(entrada, sizeof(entrada), stdin);
-    sscanf(entrada, "%s", cantidad);
+    while(1) {
+        printf("Introduzca cantidad: ");
+        fgets(entrada_cantidad, sizeof(entrada_cantidad), stdin);
+
+        if (sscanf(entrada_cantidad, "%d", &cantidad_temp) == 1) {
+            if (cantidad_temp >= 0 && cantidad_temp < 1000) {
+                snprintf(cantidad, (LNG_CANTIDAD - 1), "%d", cantidad_temp);
+                break;
+            } else {
+                printf("Error: cantidad no válida (0-999)\n");
+            }
+        } else {
+            printf("\nFormato no válido\n");
+        }
+
+        // Limpiamos el buffer de entrada (stdin) consumiendo caracteres en caso de que 
+        // hayan quedado caracteres sin leer, de tal modo de que en caso de que se haya 
+        // introducido una cadena más larga que lo asignado a entrada_nombre, quede 
+        // limpio para la siguiente iteración
+        if (strchr(entrada_cantidad, '\n') == NULL) {
+            char c;
+            while ((c = getchar()) != '\n' && c != EOF);
+        }
+    }
 }
 
 int main(int argc, char *argv[]) {
