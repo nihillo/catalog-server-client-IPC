@@ -136,19 +136,21 @@ int main(int argc, char *argv[]) {
     peticion.tipo = (long)pid;
     int tam = sizeof(peticion) - sizeof(peticion.tipo);
 
-    
-    while (1) {
+    int servidor_activo = 1;
+    int cliente_activo = 1;
+    while (cliente_activo) {
        
         // Obtener colas. En caso de no existir, se cierra con error de servidor apagado 
         cola_peticiones = msgget(clave_peticiones, 0);
         cola_respuestas = msgget(clave_respuestas, 0);
 
-        if (cola_peticiones == -1 || cola_respuestas == -1) {
+        if (cola_peticiones == -1 || cola_respuestas == -1 || !servidor_activo) {
             printf("El servidor está apagado. Se cerrará el cliente...\n");
             exit(EXIT_SUCCESS);
         }
 
-        int operacion = obtener_opcion_menu();
+        // Si el servidor no está activo, forzamos salida del cliente
+        int operacion = servidor_activo ? obtener_opcion_menu() : OP_SALIR;
         char codigo[LNG_CODIGO_PRODUCTO] = {0};
         char nombre[LNG_NOMBRE] = {0};
         char cantidad[LNG_CANTIDAD] = {0};
@@ -159,25 +161,34 @@ int main(int argc, char *argv[]) {
                 strncpy(nombre, "", LNG_NOMBRE - 1);
                 strncpy(cantidad, "0", LNG_CANTIDAD - 1);
                 break;
+
             case OP_BUSCAR:
                 obtener_codigo(codigo);
                 strncpy(nombre, "", LNG_NOMBRE - 1);
                 strncpy(cantidad, "0", LNG_CANTIDAD - 1);
                 break;
+
             case OP_INSERTAR:
                 obtener_codigo(codigo);
                 obtener_nombre(nombre);
                 obtener_cantidad(cantidad);
                 break;
+
             case OP_APAGAR:
                 strncpy(codigo, "", LNG_CODIGO_PRODUCTO - 1);
                 strncpy(nombre, "", LNG_NOMBRE - 1);
                 strncpy(cantidad, "0", LNG_CANTIDAD - 1);
+                
+                // Se asume servidor inactivo para evitar errores por condición de carrera
+                servidor_activo = 0;
                 break;
+
             case OP_SALIR:
                 printf("Cerrando cliente\n");
+                cliente_activo = 0;
                 exit(EXIT_SUCCESS);
                 break;
+
             default:
                 printf("Operación no válida\n");
                 break;
@@ -213,7 +224,7 @@ int main(int argc, char *argv[]) {
             int r = msgrcv(cola_respuestas, &respuesta, tam, pid, 0);
 
             if (r == -1) {
-                if (errno == EIDRM) {
+                if (errno == EIDRM || errno == EINVAL) {
                     // Si se elimina cola_respuestas mientras esperamos un mensaje, significa
                     // que se ha apagado el servidor
                     printf("Servidor apagado.\n");
@@ -235,6 +246,6 @@ int main(int argc, char *argv[]) {
             }
         }
     }
-    
+
     return 0;
 } 
