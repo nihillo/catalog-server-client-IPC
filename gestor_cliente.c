@@ -36,16 +36,19 @@ void obtener_codigo(char *codigo) {
         if (sscanf(entrada_codigo, "%s", codigo_temp) == 1) {
             bool valido = true;
             
-            if (strlen(codigo_temp) != LNG_CODIGO_PRODUCTO - 1) {
+            if (strlen(codigo_temp) > LNG_CODIGO_PRODUCTO - 1) {
                 valido = false;
                 printf("Error: El código es demasiado largo (máximo %d caracteres).\n", LNG_CODIGO_PRODUCTO - 1);
-            }
-
-            for (int i = 0; i < LNG_CODIGO_PRODUCTO - 1; i++) {
-                if (!isdigit(codigo_temp[i])) {
-                    valido = false;
-                    printf("Formato no válido: %s. Solo se permiten caracteres numéricos.\n", codigo_temp);
-                    break;
+            } else if (strlen(codigo_temp) < LNG_CODIGO_PRODUCTO - 1) {
+                valido = false;
+                printf("Error: El código es demasiado corto (mínimo %d caracteres).\n", LNG_CODIGO_PRODUCTO - 1);
+            } else {
+                for (int i = 0; i < LNG_CODIGO_PRODUCTO - 1; i++) {
+                    if (!isdigit(codigo_temp[i])) {
+                        valido = false;
+                        printf("Formato no válido: %s. Solo se permiten caracteres numéricos.\n", codigo_temp);
+                        break;
+                    }
                 }
             }
 
