@@ -1,4 +1,3 @@
-#include <errno.h>
 #include "protocolo.h"
 
 int obtener_opcion_menu() {
@@ -35,12 +34,25 @@ void obtener_codigo(char *codigo) {
         fgets(entrada_codigo, sizeof(entrada_codigo), stdin);
 
         if (sscanf(entrada_codigo, "%s", codigo_temp) == 1) {
-            if (strlen(codigo_temp) < LNG_CODIGO_PRODUCTO) {
-                strcpy(codigo, codigo_temp);
-                break;
-            } else {
+            bool valido = true;
+            
+            if (strlen(codigo_temp) != LNG_CODIGO_PRODUCTO - 1) {
+                valido = false;
                 printf("Error: El código es demasiado largo (máximo %d caracteres).\n", LNG_CODIGO_PRODUCTO - 1);
             }
+
+            for (int i = 0; i < LNG_CODIGO_PRODUCTO - 1; i++) {
+                if (!isdigit(codigo_temp[i])) {
+                    valido = false;
+                    printf("Formato no válido: %s. Solo se permiten caracteres numéricos.\n", codigo_temp);
+                    break;
+                }
+            }
+
+            if (valido) {
+                strcpy(codigo, codigo_temp);
+                break;
+            }        
         } else {
             printf("\nFormato no válido\n");
         }
@@ -136,8 +148,8 @@ int main(int argc, char *argv[]) {
     peticion.tipo = (long)pid;
     int tam = sizeof(peticion) - sizeof(peticion.tipo);
 
-    int servidor_activo = 1;
-    int cliente_activo = 1;
+    bool servidor_activo = true;
+    bool cliente_activo = true;
     while (cliente_activo) {
        
         // Obtener colas. En caso de no existir, se cierra con error de servidor apagado 
@@ -180,12 +192,12 @@ int main(int argc, char *argv[]) {
                 strncpy(cantidad, "0", LNG_CANTIDAD - 1);
                 
                 // Se asume servidor inactivo para evitar errores por condición de carrera
-                servidor_activo = 0;
+                servidor_activo = false;
                 break;
 
             case OP_SALIR:
                 printf("Cerrando cliente\n");
-                cliente_activo = 0;
+                cliente_activo = false;
                 exit(EXIT_SUCCESS);
                 break;
 
@@ -219,7 +231,7 @@ int main(int argc, char *argv[]) {
 
         
         // Recibir secuencia de mensajes
-        int recibir_secuencia = 1;
+        bool recibir_secuencia = true;
         while(recibir_secuencia) {
             int r = msgrcv(cola_respuestas, &respuesta, tam, pid, 0);
 
@@ -229,7 +241,7 @@ int main(int argc, char *argv[]) {
                     // que se ha apagado el servidor
                     printf("Servidor apagado.\n");
                     // Desactivamos la recepción de secuencia para salir del bucle 
-                    recibir_secuencia = 0;
+                    recibir_secuencia = false;
                 } else {
                     perror("Error en la recepción de la respuesta");
                     exit(EXIT_FAILURE);
@@ -237,8 +249,8 @@ int main(int argc, char *argv[]) {
             }
 
             if (recibir_secuencia && strcmp(respuesta.cuerpo, "--END") == 0) {
-                printf("Debug: Fin de mensaje recibido\n");
-                recibir_secuencia = 0;
+                if (DEBUG) printf("Debug: Fin de mensaje recibido\n");
+                recibir_secuencia = false;
             }
 
             if (recibir_secuencia) {

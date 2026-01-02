@@ -23,7 +23,7 @@ int main(int argc, char *argv[]) {
     Mensaje respuesta;
     int p, r;
 
-    int servidor_activo = 1;
+    bool servidor_activo = true;
     int tam = sizeof(peticion) - sizeof(peticion.tipo);
 
     while (servidor_activo) {
@@ -35,16 +35,17 @@ int main(int argc, char *argv[]) {
         p = msgrcv(cola_peticiones, &peticion, tam, 0, 0);
         if (p == -1) {
             perror("Error en la comunicación");
-            servidor_activo = 0;
+            servidor_activo = false;
         }
         
         respuesta.tipo = peticion.tipo;
-        sprintf(respuesta.cuerpo, "Debug: Mensaje recibido: %s", peticion.cuerpo);
+
+        if (DEBUG) sprintf(respuesta.cuerpo, "Debug: Mensaje recibido: %s", peticion.cuerpo);
         r = msgsnd(cola_respuestas, &respuesta, tam, 0);
         
         if (r == -1) {
             perror("Error en la comunicación");
-            servidor_activo = 0;
+            servidor_activo = false;
         }
 
         if (servidor_activo) {
@@ -65,12 +66,62 @@ int main(int argc, char *argv[]) {
         
                     if (r == -1) {
                         perror("Error en la comunicación");
-                        servidor_activo = 0;
+                        servidor_activo = false;
                     }
                     break;
 
                 case OP_INSERTAR:
-                    /* code */
+                    sprintf(respuesta.cuerpo, "INSERTAR: Cod %s, Nom %s, Cant %s", codigo, nombre, cantidad);
+                    r = msgsnd(cola_respuestas, &respuesta, tam, 0);
+                    if (r == -1) {
+                        perror("Error en la comunicación");
+                        servidor_activo = false;
+                    }
+
+                    Producto producto;
+                    strcpy(producto.codigo, codigo);
+                    strcpy(producto.nombre, nombre);
+                    producto.cantidad = atoi(cantidad);
+
+                    FILE *f = fopen("productos.dat", "r+b");
+                    if (f == NULL) {
+                        printf("El archivo productos.dat no existe. Creando uno nuevo...\n");
+                        f = fopen("productos.dat", "w+b");
+                        if (f == NULL) {
+                            perror("Error fatal: No se pudo crear el archivo productos.dat");
+                            exit(EXIT_FAILURE);
+                        }
+                    }
+
+                    // Verificar que no exista ya un producto con el mismo código
+                    Producto temp;
+                    bool producto_existe = false;
+                    rewind(f);
+
+                    while (fread(&temp, sizeof(Producto), 1, f) == 1) {
+                        if (strcmp(temp.codigo, producto.codigo) == 0) {
+                            producto_existe = true;
+                            break;
+                        }
+                    }
+
+                    if (producto_existe) {
+                        sprintf(respuesta.cuerpo, "El producto con código %s ya existe.", producto.codigo);
+                    } else {
+                        // Si no existe, lo añadimos
+                        fseek(f, 0, SEEK_END); 
+                        fwrite(&producto, sizeof(Producto), 1, f);
+                        sprintf(respuesta.cuerpo, "Producto insertado correctamente.");
+                    }
+
+                    fclose(f);
+
+                    
+                    r = msgsnd(cola_respuestas, &respuesta, tam, 0);
+                    if (r == -1) {
+                        perror("Error en la comunicación");
+                        servidor_activo = false;
+                    }
                     break;
 
                 case OP_BUSCAR:
@@ -79,7 +130,7 @@ int main(int argc, char *argv[]) {
 
                 case OP_APAGAR:
                     printf("Recibida petición de APAGADO\n");
-                    servidor_activo = 0;
+                    servidor_activo = false;
                     break;
 
                 default:
@@ -93,7 +144,7 @@ int main(int argc, char *argv[]) {
         
             if (r == -1) {
                 perror("Error en la comunicación");
-                servidor_activo = 0;
+                servidor_activo = false;
             }
 
         }

@@ -4,6 +4,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <stdbool.h>
+#include <errno.h>
+#include <ctype.h>
+
+#define DEBUG true // activa modo debug
 
 #define LNG_CODIGO_OPERACION 1
 #define LNG_CODIGO_PRODUCTO 5 // longitud efectiva 4, necesario contar cierre cadena
