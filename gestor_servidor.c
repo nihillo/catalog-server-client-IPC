@@ -29,6 +29,7 @@ int main(int argc, char *argv[]) {
     Mensaje peticion;
     Mensaje respuesta;
     int p, r;
+    FILE *f;
 
     bool servidor_activo = true;
     int tam = sizeof(peticion) - sizeof(peticion.tipo);
@@ -84,16 +85,16 @@ int main(int argc, char *argv[]) {
                     }
 
                 
-                    FILE *f_lst = fopen("productos.dat", "rb");
-                    if (f_lst == NULL) {
+                    f = fopen("productos.dat", "rb");
+                    if (f == NULL) {
                         perror("Error: No se pudo abrir el archivo productos.dat");
                         exit(EXIT_FAILURE);
                     }
 
                     Producto producto_lst;
-                    rewind(f_lst);
+                    rewind(f);
 
-                    while (fread(&producto_lst, sizeof(Producto), 1, f_lst) == 1) {
+                    while (fread(&producto_lst, sizeof(Producto), 1, f) == 1) {
                         // Se envía a la cola un mensaje por cada producto
                         sprintf(respuesta.cuerpo, "%s\t%s\t%d", producto_lst.codigo, producto_lst.nombre, producto_lst.cantidad);
                         r = msgsnd(cola_respuestas, &respuesta, tam, 0);
@@ -118,11 +119,11 @@ int main(int argc, char *argv[]) {
                     strcpy(producto_ins.nombre, nombre);
                     producto_ins.cantidad = atoi(cantidad);
 
-                    FILE *f_ins = fopen("productos.dat", "rb");
-                    if (f_ins == NULL) {
+                    f = fopen("productos.dat", "rb");
+                    if (f == NULL) {
                         printf("El archivo productos.dat no existe. Se creará uno nuevo...\n");
-                        f_ins = fopen("productos.dat", "wb");
-                        if (f_ins == NULL) {
+                        f = fopen("productos.dat", "wb");
+                        if (f == NULL) {
                             perror("Error fatal: No se pudo crear el archivo productos.dat");
                             exit(EXIT_FAILURE);
                         }
@@ -131,9 +132,9 @@ int main(int argc, char *argv[]) {
                     // Verificar que no exista ya un producto con el mismo código
                     Producto temp;
                     bool producto_existe = false;
-                    rewind(f_ins);
+                    rewind(f);
 
-                    while (fread(&temp, sizeof(Producto), 1, f_ins) == 1) {
+                    while (fread(&temp, sizeof(Producto), 1, f) == 1) {
                         if (strcmp(temp.codigo, producto_ins.codigo) == 0) {
                             producto_existe = true;
                             break;
@@ -144,8 +145,8 @@ int main(int argc, char *argv[]) {
                         sprintf(respuesta.cuerpo, "El producto con código %s ya existe.", producto_ins.codigo);
                     } else {
                         // Si el producto no existe, lo añadimos
-                        fseek(f_ins, 0, SEEK_END); 
-                        long tam_archivo = ftell(f_ins);
+                        fseek(f, 0, SEEK_END); 
+                        long tam_archivo = ftell(f);
                         
                         int num_productos;
                         if (tam_archivo == 0) {
@@ -155,30 +156,30 @@ int main(int argc, char *argv[]) {
                         }
 
                         Producto *catalogo = malloc((num_productos + 1) * sizeof(Producto));
-                        rewind(f_ins);
-                        fread(catalogo, sizeof(Producto), num_productos, f_ins);
+                        rewind(f);
+                        fread(catalogo, sizeof(Producto), num_productos, f);
                         
                         catalogo[num_productos] = producto_ins;
-                        fseek(f_ins, 0, SEEK_SET);
+                        fseek(f, 0, SEEK_SET);
                         
                         qsort(catalogo, num_productos + 1, sizeof(Producto), comparadorProductos);
                        
                         // Se cierra el archivo para volverlo a abrir en modo de escritura
-                        fclose(f_ins);
-                        f_ins = fopen("productos.dat", "wb");
-                        if (f_ins == NULL) {
+                        fclose(f);
+                        f = fopen("productos.dat", "wb");
+                        if (f == NULL) {
                             perror("Error fatal: No se pudo abrir el archivo productos.dat en modo escritura");
                             exit(EXIT_FAILURE);
                         }
 
-                        fwrite(catalogo, sizeof(Producto), num_productos + 1, f_ins);
+                        fwrite(catalogo, sizeof(Producto), num_productos + 1, f);
 
                         free(catalogo);
 
                         sprintf(respuesta.cuerpo, "Producto insertado con éxito");
                     }
 
-                    fclose(f_ins);
+                    fclose(f);
 
                     
                     r = msgsnd(cola_respuestas, &respuesta, tam, 0);
@@ -189,7 +190,59 @@ int main(int argc, char *argv[]) {
                     break;
 
                 case OP_BUSCAR:
-                    /* code */
+                    
+
+                    f = fopen("productos.dat", "rb");
+                    if (f == NULL) {
+                        perror("Error: No se pudo abrir el archivo productos.dat");
+                        exit(EXIT_FAILURE);
+                    }
+
+                    Producto producto_bus;
+                    rewind(f);
+                    
+                    bool encontrado = false;
+                    while (!encontrado && fread(&producto_bus, sizeof(Producto), 1, f) == 1) {
+                        if (strcmp(producto_bus.codigo, codigo) == 0) {
+                            encontrado = true;
+                        }
+                    }
+
+                    if (encontrado) {
+                        sprintf(respuesta.cuerpo, "Producto (Código, Nombre, Cantidad)");
+                        r = msgsnd(cola_respuestas, &respuesta, tam, 0);
+                        if (r == -1) {
+                            perror("Error en la comunicación");
+                            servidor_activo = false;
+                        }
+
+                        sprintf(respuesta.cuerpo, "***********************************************");
+                        r = msgsnd(cola_respuestas, &respuesta, tam, 0);
+                        if (r == -1) {
+                            perror("Error en la comunicación");
+                            servidor_activo = false;
+                        }
+
+                        sprintf(respuesta.cuerpo, "%s\t%s\t%d", producto_bus.codigo, producto_bus.nombre, producto_bus.cantidad);
+
+                        r = msgsnd(cola_respuestas, &respuesta, tam, 0);
+                        if (r == -1) {
+                            perror("Error en la comunicación");
+                            servidor_activo = false;
+                        }
+
+                    } else {
+                        sprintf(respuesta.cuerpo, "Producto con código %s no encontrado", codigo);
+
+                        r = msgsnd(cola_respuestas, &respuesta, tam, 0);
+                        if (r == -1) {
+                            perror("Error en la comunicación");
+                            servidor_activo = false;
+                        }
+                    }
+
+                    fclose(f);
+
                     break;
 
                 case OP_APAGAR:
