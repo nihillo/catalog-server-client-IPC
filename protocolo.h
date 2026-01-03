@@ -12,7 +12,7 @@
 
 #define LNG_CODIGO_OPERACION 1
 #define LNG_CODIGO_PRODUCTO 5 // longitud efectiva 4, necesario contar cierre cadena
-#define LNG_NOMBRE 44 // long efectiva 43
+#define LNG_NOMBRE 51 // long efectiva 50
 #define LNG_CANTIDAD 4 // long efectiva 3
 #define N_SEPARADORES 3   
 #define LNG_PET LNG_CODIGO_PRODUCTO + LNG_NOMBRE + LNG_CANTIDAD + N_SEPARADORES
