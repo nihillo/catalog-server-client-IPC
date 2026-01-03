@@ -102,7 +102,7 @@ int main(int argc, char *argv[]) {
                             servidor_activo = false;
                         }
 
-                        sprintf(respuesta.cuerpo, "***********************************************");
+                        sprintf(respuesta.cuerpo, "-----------------------------------------------");
                         r = msgsnd(cola_respuestas, &respuesta, tam, 0);
                         if (r == -1) {
                             perror("Error en la comunicación");
@@ -122,7 +122,7 @@ int main(int argc, char *argv[]) {
 
                         while (fread(&producto_lst, sizeof(Producto), 1, f) == 1) {
                             // Se envía a la cola un mensaje por cada producto
-                            sprintf(respuesta.cuerpo, "%s\t%s\t%d", producto_lst.codigo, producto_lst.nombre, producto_lst.cantidad);
+                            sprintf(respuesta.cuerpo, "%s\t%s\t%d ud.", producto_lst.codigo, producto_lst.nombre, producto_lst.cantidad);
                             r = msgsnd(cola_respuestas, &respuesta, tam, 0);
             
                             if (r == -1) {
@@ -237,22 +237,23 @@ int main(int argc, char *argv[]) {
                     }
 
                     if (encontrado) {
-                        sprintf(respuesta.cuerpo, "Producto (Código, Nombre, Cantidad)");
+                        // Se envía a la cola un mensaje por cada linea a imprimir, para evitar desbordar el tamaño de mensaje
+
+                        sprintf(respuesta.cuerpo, "Código: %s", producto_bus.codigo);
                         r = msgsnd(cola_respuestas, &respuesta, tam, 0);
                         if (r == -1) {
                             perror("Error en la comunicación");
                             servidor_activo = false;
                         }
 
-                        sprintf(respuesta.cuerpo, "***********************************************");
+                        sprintf(respuesta.cuerpo, "Nombre: %s", producto_bus.nombre);
                         r = msgsnd(cola_respuestas, &respuesta, tam, 0);
                         if (r == -1) {
                             perror("Error en la comunicación");
                             servidor_activo = false;
                         }
 
-                        sprintf(respuesta.cuerpo, "%s\t%s\t%d", producto_bus.codigo, producto_bus.nombre, producto_bus.cantidad);
-
+                        sprintf(respuesta.cuerpo, "Cantidad: %d", producto_bus.cantidad);
                         r = msgsnd(cola_respuestas, &respuesta, tam, 0);
                         if (r == -1) {
                             perror("Error en la comunicación");

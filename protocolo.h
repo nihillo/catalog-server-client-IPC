@@ -8,7 +8,7 @@
 #include <errno.h>
 #include <ctype.h>
 
-#define DEBUG true // activa modo debug
+#define DEBUG false // activa modo debug
 
 #define LNG_CODIGO_OPERACION 1
 #define LNG_CODIGO_PRODUCTO 5 // longitud efectiva 4, necesario contar cierre cadena
