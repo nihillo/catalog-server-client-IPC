@@ -17,12 +17,16 @@ int main(int argc, char *argv[]) {
     key_t clave_peticiones = CLAVE_PETICIONES;
     key_t clave_respuestas = CLAVE_RESPUESTAS;
 
-    int cola_peticiones = msgget(clave_peticiones, IPC_CREAT | 0666);
-    int cola_respuestas = msgget(clave_respuestas, IPC_CREAT | 0666);
+    int cola_peticiones = msgget(clave_peticiones, IPC_CREAT | IPC_EXCL | 0666);
+    int cola_respuestas = msgget(clave_respuestas, IPC_CREAT | IPC_EXCL | 0666);
     
     if (cola_peticiones == -1 || cola_respuestas == -1) {
-        perror("Error al crear las colas de mensajes (msgget)");
-        exit(1);
+        if (errno == EEXIST) {
+            printf("Colas de mensajes ya inicializadas. Utilice 'ipcs -q' e 'ipcrm -q' para identificarlas y eliminarlas manualmente antes de volver a ejecutar el programa.\n");
+        } else {
+            perror("Error al crear las colas de mensajes (msgget)");
+        }
+        exit(EXIT_FAILURE);
     }
 
     printf("Colas de mensajes inicializadas. Peticiones ID: %d, Respuestas ID: %d\n", cola_peticiones, cola_respuestas);
@@ -185,6 +189,11 @@ int main(int argc, char *argv[]) {
                         }
 
                         Producto *inventario = malloc((num_productos + 1) * sizeof(Producto));
+                        if (inventario == NULL) {
+                            perror("Error: No se pudo reservar memoria para el inventario");
+                            exit(EXIT_FAILURE);
+                        }
+
                         rewind(f);
                         fread(inventario, sizeof(Producto), num_productos, f);
                         
@@ -197,11 +206,20 @@ int main(int argc, char *argv[]) {
                         fclose(f);
                         f = fopen("productos.dat", "wb");
                         if (f == NULL) {
-                            perror("Error fatal: No se pudo abrir el archivo productos.dat en modo escritura");
+                            perror("Error al abrir el archivo productos.dat en modo escritura");
+                            free(inventario);
+                            fclose(f);
                             exit(EXIT_FAILURE);
                         }
 
-                        fwrite(inventario, sizeof(Producto), num_productos + 1, f);
+                        size_t escrito = fwrite(inventario, sizeof(Producto), num_productos + 1, f);
+
+                        if (escrito != (size_t)(num_productos + 1)) {
+                            perror("Error al escribir en el archivo productos.dat");
+                            free(inventario);
+                            fclose(f);
+                            exit(EXIT_FAILURE);
+                        }
 
                         free(inventario);
 
