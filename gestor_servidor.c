@@ -22,7 +22,7 @@ int main(int argc, char *argv[]) {
     
     if (cola_peticiones == -1 || cola_respuestas == -1) {
         if (errno == EEXIST) {
-            printf("Colas de mensajes ya inicializadas. Utilice 'ipcs -q' e 'ipcrm -q' para identificarlas y eliminarlas manualmente antes de volver a ejecutar el programa.\n");
+            printf("Colas de mensajes ya inicializadas. Esto pudede deberse a que el servidor ya esté inicializado, o a que hayan quedado abiertas de un apagado anterior no limpio.\n");
         } else {
             perror("Error al crear las colas de mensajes (msgget)");
         }

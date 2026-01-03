@@ -37,10 +37,10 @@ void obtener_codigo(char *codigo) {
             
             if (strlen(codigo_temp) > LNG_CODIGO_PRODUCTO - 1) {
                 valido = false;
-                printf("Error: El código es demasiado largo (máximo %d caracteres).\n", LNG_CODIGO_PRODUCTO - 1);
+                printf("Error: El código es demasiado largo (debe contener %d caracteres numéricos).\n", LNG_CODIGO_PRODUCTO - 1);
             } else if (strlen(codigo_temp) < LNG_CODIGO_PRODUCTO - 1) {
                 valido = false;
-                printf("Error: El código es demasiado corto (mínimo %d caracteres).\n", LNG_CODIGO_PRODUCTO - 1);
+                printf("Error: El código es demasiado corto (debe contener %d caracteres numéricos).\n", LNG_CODIGO_PRODUCTO - 1);
             } else {
                 for (int i = 0; i < LNG_CODIGO_PRODUCTO - 1; i++) {
                     if (!isdigit(codigo_temp[i])) {
@@ -79,11 +79,29 @@ void obtener_nombre(char *nombre) {
         fgets(entrada_nombre, sizeof(entrada_nombre), stdin);
 
         if (sscanf(entrada_nombre, "%[^\n]", nombre_temp) == 1) {
-            if (strlen(nombre) < LNG_NOMBRE) {
-                strcpy(nombre, nombre_temp);
-                break;
-            } else {
+            if (strlen(nombre) >= LNG_NOMBRE) {
                 printf("Error: El nombre es demasiado largo (máximo %d caracteres).\n", LNG_NOMBRE - 1);
+            } else if (strchr(nombre_temp, '|') != NULL) {
+                // validar que el nombre no contenga el carácter '|', usado en la construcción de mensajes
+                printf("Error: El nombre no puede contener el carácter '|'.\n");
+            } else {
+                // validar que no sea vacío y no contenga sólo espacios
+                bool valido = false;
+                for (int i = 0; nombre_temp[i] != '\0'; i++) {
+                    if (!isspace(nombre_temp[i]) && isprint(nombre_temp[i])) { 
+                        // tan pronto como haya un carácter que no sea espacio y sea imprimible, lo damos por válido
+                        valido = true;
+                        break;
+                    }
+                }
+                
+                if (valido) {
+                    strcpy(nombre, nombre_temp);
+                    break;
+                } else {
+                    printf("Error: El nombre no puede estar vacío o contener sólo espacios.\n");
+                    continue;
+                }
             }
         } else {
             printf("\nFormato no válido\n");
