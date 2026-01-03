@@ -68,45 +68,74 @@ int main(int argc, char *argv[]) {
             // Se determina la operación a realizar
             switch (operacion) {
 
-                case OP_LISTAR:
-
-                    sprintf(respuesta.cuerpo, "Listado de productos (Código, Nombre, Cantidad)");
-                    r = msgsnd(cola_respuestas, &respuesta, tam, 0);
-                    if (r == -1) {
-                        perror("Error en la comunicación");
-                        servidor_activo = false;
-                    }
-
-                    sprintf(respuesta.cuerpo, "***********************************************");
-                    r = msgsnd(cola_respuestas, &respuesta, tam, 0);
-                    if (r == -1) {
-                        perror("Error en la comunicación");
-                        servidor_activo = false;
-                    }
-
-                
+                case OP_LISTAR: // operación listar
+                    ;
+                    // Determinamos primero si hay productos
+                    int num_productos = 0;
                     f = fopen("productos.dat", "rb");
                     if (f == NULL) {
-                        perror("Error: No se pudo abrir el archivo productos.dat");
-                        exit(EXIT_FAILURE);
+                        num_productos = 0;
+                    } else {
+                        fseek(f, 0, SEEK_END);
+                        long tam_archivo = ftell(f);
+                        if (tam_archivo == 0) {
+                            num_productos = 0;
+                        } else {
+                            num_productos = tam_archivo / sizeof(Producto);
+                        }
+                        fclose(f);
                     }
-
-                    Producto producto_lst;
-                    rewind(f);
-
-                    while (fread(&producto_lst, sizeof(Producto), 1, f) == 1) {
-                        // Se envía a la cola un mensaje por cada producto
-                        sprintf(respuesta.cuerpo, "%s\t%s\t%d", producto_lst.codigo, producto_lst.nombre, producto_lst.cantidad);
+                    
+                    if (num_productos == 0) {
+                        sprintf(respuesta.cuerpo, "No existen productos en el inventario.");
                         r = msgsnd(cola_respuestas, &respuesta, tam, 0);
-        
                         if (r == -1) {
                             perror("Error en la comunicación");
                             servidor_activo = false;
                         }
+                    } else {
+
+                        sprintf(respuesta.cuerpo, "Listado de productos (Código, Nombre, Cantidad)");
+                        r = msgsnd(cola_respuestas, &respuesta, tam, 0);
+                        if (r == -1) {
+                            perror("Error en la comunicación");
+                            servidor_activo = false;
+                        }
+
+                        sprintf(respuesta.cuerpo, "***********************************************");
+                        r = msgsnd(cola_respuestas, &respuesta, tam, 0);
+                        if (r == -1) {
+                            perror("Error en la comunicación");
+                            servidor_activo = false;
+                        }
+
+                    
+                        f = fopen("productos.dat", "rb");
+                        if (f == NULL) {
+                            perror("Error: No se pudo abrir el archivo productos.dat");
+                            exit(EXIT_FAILURE);
+                        }
+                        
+
+                        Producto producto_lst;
+                        rewind(f);
+
+                        while (fread(&producto_lst, sizeof(Producto), 1, f) == 1) {
+                            // Se envía a la cola un mensaje por cada producto
+                            sprintf(respuesta.cuerpo, "%s\t%s\t%d", producto_lst.codigo, producto_lst.nombre, producto_lst.cantidad);
+                            r = msgsnd(cola_respuestas, &respuesta, tam, 0);
+            
+                            if (r == -1) {
+                                perror("Error en la comunicación");
+                                servidor_activo = false;
+                            }
+                        }
+
+                        fclose(f);
                     }
                     break;
 
-                case OP_INSERTAR:
+                case OP_INSERTAR: // operación insertar
                     sprintf(respuesta.cuerpo, "INSERTAR: Cod %s, Nom %s, Cant %s", codigo, nombre, cantidad);
                     r = msgsnd(cola_respuestas, &respuesta, tam, 0);
                     if (r == -1) {
@@ -155,14 +184,14 @@ int main(int argc, char *argv[]) {
                             num_productos = tam_archivo / sizeof(Producto);
                         }
 
-                        Producto *catalogo = malloc((num_productos + 1) * sizeof(Producto));
+                        Producto *inventario = malloc((num_productos + 1) * sizeof(Producto));
                         rewind(f);
-                        fread(catalogo, sizeof(Producto), num_productos, f);
+                        fread(inventario, sizeof(Producto), num_productos, f);
                         
-                        catalogo[num_productos] = producto_ins;
+                        inventario[num_productos] = producto_ins;
                         fseek(f, 0, SEEK_SET);
                         
-                        qsort(catalogo, num_productos + 1, sizeof(Producto), comparadorProductos);
+                        qsort(inventario, num_productos + 1, sizeof(Producto), comparadorProductos);
                        
                         // Se cierra el archivo para volverlo a abrir en modo de escritura
                         fclose(f);
@@ -172,9 +201,9 @@ int main(int argc, char *argv[]) {
                             exit(EXIT_FAILURE);
                         }
 
-                        fwrite(catalogo, sizeof(Producto), num_productos + 1, f);
+                        fwrite(inventario, sizeof(Producto), num_productos + 1, f);
 
-                        free(catalogo);
+                        free(inventario);
 
                         sprintf(respuesta.cuerpo, "Producto insertado con éxito");
                     }
@@ -189,9 +218,8 @@ int main(int argc, char *argv[]) {
                     }
                     break;
 
-                case OP_BUSCAR:
+                case OP_BUSCAR: // operación buscar
                     
-
                     f = fopen("productos.dat", "rb");
                     if (f == NULL) {
                         perror("Error: No se pudo abrir el archivo productos.dat");
@@ -245,7 +273,7 @@ int main(int argc, char *argv[]) {
 
                     break;
 
-                case OP_APAGAR:
+                case OP_APAGAR: // operación apagar
                     printf("Recibida petición de APAGADO\n");
                     servidor_activo = false;
                     break;

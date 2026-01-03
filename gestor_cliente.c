@@ -11,7 +11,6 @@ int obtener_opcion_menu() {
     printf("4) Apagar el servidor (Pulsar 4)\n");
     printf("5) Salir del cliente (Pulsar 5)\n");
     printf("***********************************************\n");
-    printf("\n");
     printf("Pulse una opción: ");
 
     char entrada_menu[100];
