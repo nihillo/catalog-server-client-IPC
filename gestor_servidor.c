@@ -27,13 +27,17 @@ void salida_limpia() {
     // Una vez se sale del bucle de escucha (cuando se desactiva el flag servidor_activo), 
     // se cierra siempre el servidor, eliminando en primer lugar las colas de mensajes.
     printf("Apagando servidor...\n");
-    printf("Eliminando colas de mensajes...\n");
-    if (msgctl(cola_peticiones, IPC_RMID, NULL) == -1) {
+
+    if (cola_peticiones != -1 || cola_respuestas != -1) {
+        printf("Eliminando colas de mensajes...\n");
+    }
+    
+    if (cola_peticiones != -1 && msgctl(cola_peticiones, IPC_RMID, NULL) == -1) {
         // Control de errores: en caso del que el resultado de la eliminación sea -1, se informa el error
         perror("Error al terminar la cola de peticiones (msgctl)");
     }
     
-    if (msgctl(cola_respuestas, IPC_RMID, NULL) == -1) {
+    if (cola_respuestas != -1 && msgctl(cola_respuestas, IPC_RMID, NULL) == -1) {
         // Control de errores: en caso del que el resultado de la eliminación sea -1, se informa el error
         perror("Error al terminar la cola de respuestas (msgctl)");
     }
@@ -79,7 +83,9 @@ int main(int argc, char *argv[]) {
     
     if (cola_peticiones == -1 || cola_respuestas == -1) {
         if (errno == EEXIST) {
-            printf("Colas de mensajes ya inicializadas. Esto pudede deberse a que el servidor ya esté inicializado, o a que hayan quedado abiertas de un apagado anterior no limpio.\n");
+            printf("Colas de mensajes ya inicializadas.\n");
+            printf("Esto puede deberse a que el servidor ya esté inicializado, o a que hayan quedado abiertas de un apagado anterior no limpio.\n");
+            printf("Deberán eliminarse manualmente antes de volver a iniciar el servidor.\n");
         } else {
             perror("Error al crear las colas de mensajes (msgget)");
         }
