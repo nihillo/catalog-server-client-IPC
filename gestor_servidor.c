@@ -85,7 +85,6 @@ int main(int argc, char *argv[]) {
         if (errno == EEXIST) {
             printf("Colas de mensajes ya inicializadas.\n");
             printf("Esto puede deberse a que el servidor ya esté inicializado, o a que hayan quedado abiertas de un apagado anterior no limpio.\n");
-            printf("Deberán eliminarse manualmente antes de volver a iniciar el servidor.\n");
         } else {
             perror("Error al crear las colas de mensajes (msgget)");
         }
