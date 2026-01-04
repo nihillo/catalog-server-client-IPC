@@ -1,5 +1,11 @@
 #include "protocolo.h"
 
+// Variables globales para las colas, de modo que tanto
+// main como salida_limpia tengan acceso
+int cola_peticiones = -1;
+int cola_respuestas = -1;
+
+
 /* * FUNCIÓN AUXILIAR: comparadorProductos
  * Esta función es necesaria para la función estándar qsort().
  * Compara dos estructuras Producto basándose en su código alfanumérico.
@@ -12,6 +18,31 @@ int comparadorProductos(const void *a, const void *b) {
     return strcmp(p1->codigo, p2->codigo);
 }
 
+/* * FUNCIÓN AUXILIAR: salida_limpia
+ * Cierra el servidor de forma limpia, eliminando las colas.
+ * Se ejecuta tanto al cerrar deliberadamente el servidor como
+ * cuando el cierre se produce por errores (mediante 'atexit')
+ */
+void salida_limpia() {
+    // Una vez se sale del bucle de escucha (cuando se desactiva el flag servidor_activo), 
+    // se cierra siempre el servidor, eliminando en primer lugar las colas de mensajes.
+    printf("Apagando servidor...\n");
+    printf("Eliminando colas de mensajes...\n");
+    if (msgctl(cola_peticiones, IPC_RMID, NULL) == -1) {
+        // Control de errores: en caso del que el resultado de la eliminación sea -1, se informa el error
+        perror("Error al terminar la cola de peticiones (msgctl)");
+    }
+    
+    if (msgctl(cola_respuestas, IPC_RMID, NULL) == -1) {
+        // Control de errores: en caso del que el resultado de la eliminación sea -1, se informa el error
+        perror("Error al terminar la cola de respuestas (msgctl)");
+    }
+
+    // Mensaje de apagado impreso en el lado del servidor, que no necesariamente estará en la misma terminal
+    // que el cliente. En caso de apagado, el cliente tiene la responsabilidad de detectar que el
+    // servidor ya no está activo e imprimir sus propios mensajes indicándolo.
+    printf("Servidor apagado.\n");
+}
 
 /* -- FUNCION PRINCIPAL -- */
 int main(int argc, char *argv[]) {
@@ -20,12 +51,16 @@ int main(int argc, char *argv[]) {
     // (Necesitamos 'argc' para comprobar que el programa se invoque sin parámetros, pero 'argv' no se usa)
     (void)argv;
 
-
     // Control de errores: Verifica que no se pasen argumentos por línea de comandos
     if (argc > 1) {
         fprintf(stderr, "Error: El programa no acepta argumentos de línea de comandos.\n");
         exit(EXIT_FAILURE);
     }
+
+    // Control de errores: aseguramos que siempre que se produzca un 'exit' se llame a la función
+    // salida_limpia, cerrando las colas convenientemente y evitando estados posteriores inconsistentes
+    // entre el servidor y los clientes
+    atexit(salida_limpia);
 
     printf("Inicializando servidor...\n");
 
@@ -39,8 +74,8 @@ int main(int argc, char *argv[]) {
     // - Se usa IPC_CREAT | IPC_EXCL para asegurar que el servidor es quien crea las colas.
     // - Si msgget falla con EEXIST, significa que ya hay un servidor en ejecución o que han 
     //   quedado colas abiertas de un cierre anterior no limpio
-    int cola_peticiones = msgget(clave_peticiones, IPC_CREAT | IPC_EXCL | 0666);
-    int cola_respuestas = msgget(clave_respuestas, IPC_CREAT | IPC_EXCL | 0666);
+    cola_peticiones = msgget(clave_peticiones, IPC_CREAT | IPC_EXCL | 0666);
+    cola_respuestas = msgget(clave_respuestas, IPC_CREAT | IPC_EXCL | 0666);
     
     if (cola_peticiones == -1 || cola_respuestas == -1) {
         if (errno == EEXIST) {
@@ -418,25 +453,5 @@ int main(int argc, char *argv[]) {
         }
     }    
 
-
-    // Una vez se sale del bucle de escucha (cuando se desactiva el flag servidor_activo), 
-    // se cierra siempre el servidor, eliminando en primer lugar las colas de mensajes.
-    printf("Apagando servidor...\n");
-    printf("Eliminando colas de mensajes...\n");
-    if (msgctl(cola_peticiones, IPC_RMID, NULL) == -1) {
-        // Control de errores: en caso del que el resultado de la eliminación sea -1, se informa el error
-        perror("Error al terminar la cola de peticiones (msgctl)");
-    }
-    
-    if (msgctl(cola_respuestas, IPC_RMID, NULL) == -1) {
-        // Control de errores: en caso del que el resultado de la eliminación sea -1, se informa el error
-        perror("Error al terminar la cola de respuestas (msgctl)");
-    }
-
-    // Mensaje de apagado impreso en el lado del servidor, que no necesariamente estará en la misma terminal
-    // que el cliente. En caso de apagado, el cliente tiene la responsabilidad de detectar que el
-    // servidor ya no está activo e imprimir sus propios mensajes indicándolo.
-    printf("Servidor apagado.\n");
-
-    return 0;
+    exit(EXIT_SUCCESS);
 }
