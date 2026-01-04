@@ -1,7 +1,7 @@
 CC = gcc
 
 # Uso de estandar gnu99, que añade soporte de System V,
-# entre otras carcterísticas de GNU/Linux
+# entre otras características de GNU/Linux
 CFLAGS = -std=gnu99
 
 all: gestor_servidor gestor_cliente
